@@ -7,21 +7,22 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from scipy import stats
+from sklearn.linear_model import LinearRegression
 
 import utils
 
-# from sklearn.linear_model import LinearRegression
 # from scipy.optimize import curve_fit
 
 
-def plot_points(x, y, z, num_points):
+def plot_points(x, y, color, num_points):
 
-    alpha = exp(-0.0001 * num_points)
+    alpha = exp(-0.00015 * num_points)
     plt.scatter(
         x,
         y,
-        c=z,
-        cmap="magma",
+        # c=z,
+        # cmap="magma",
+        color=color,
         alpha=alpha,
         s=20,
         linewidths=0,
@@ -75,53 +76,55 @@ def main(args):
     erpm_grad = pd.Series(erpm_grad_np)
     df["erpm_grad"] = erpm_grad
 
-    corr = utils.get_strong_corr(df, "erpm_grad", 8)
+    # get strongly correlating values
+    corr = df.corr()["erpm_grad"]
+    corr = corr.dropna()
+    corr = corr.sort_values(key=abs, ascending=False)
+    corr = corr.iloc[1:]  # ignore correlation with itself
+    corr = corr.nlargest(8)
     # print(corr)
 
     # filter data
     df = df[df["erpm_abs"] > 500]
-    # df = df[df["duty_cycle_abs"] > 0.01]
     df = df.reset_index()
+    # df = df[df["duty_cycle_abs"] > 0.01]
+
+    # print(df["gnss_gVel"].nlargest(n=30))
 
     # assign vars to axis
-    # X = df[["current_motor", "erpm_abs"]]
+    X = df[["current_motor", "erpm_abs"]]
     x = df["current_motor"]
     y = df["erpm_grad"]
 
-    # model = LinearRegression()
-    # model.fit(X, y)
-    # y_pred = model.predict(X)
+    model = LinearRegression()
+    model.fit(X, y)
+    y_pred = pd.Series(model.predict(X))
+    multivar_intercept, multivar_slope = utils.inverse_lin_func(
+        model.intercept_, model.coef_[0]
+    )
+    print(f"y vs y_pred corr: {y_pred.corr(y)}")
+    print(model.intercept_)
+    print(model.coef_)
+    print(multivar_slope)
+    print(multivar_intercept)
+    print(
+        f"(current_motor - ({abs(model.intercept_ / model.coef_[0]):.2f} + {abs(model.coef_[1] / model.coef_[0]):.4f} * erpm_abs)) / {1 / model.coef_[0]:.2f}"
+    )
+    print(
+        f"{model.intercept_:.2f} + {model.coef_[0]:.3f} * current_motor + {model.coef_[1]:.5f} * erpm_abs"
+    )
 
     # fit linear function to data
     slope, intercept, r_value, p_value, std_err = stats.linregress(x, y)
     offset_display, ratio_display = utils.inverse_lin_func(intercept, slope)
 
     num_points = len(x)
-    spacing = 20
 
-    print("")
-    print(f"{'Log File:':<{spacing}}{os.path.splitext(csv_file)[0]}")
-    print(f"{'Evaluated points:':<{spacing}}{num_points:,}")
-    print("")
-    # print("RECOMMENDED VALUES:")
-    print(f"{'Accel. Ratio:':<{spacing}}{ratio_display:.1f}")
-    print(f"{'Torque Offset:':<{spacing}}{offset_display:.1f} A")
-    print("")
-    print(f"{'Correlation:':<{spacing}}{r_value:.2f}")
-    print("")
-
-    if args.plot:
-        plt.figure(figsize=(8, 8), dpi=100)
-        plot_points(x, y, df["erpm_abs"], num_points)
-        # if args.ref_ratio:
-        #     ratio_ref, offset_ref = utils.inverse_lin_func(8, args.ref_ratio)
-        #     plot_line(ratio_ref, offset_ref, (0.4, 0.7, 0.9), "Reference")
-        plot_line(slope, intercept, "purple", "Predicted")
-        plt.xlabel("Motor Current [A]")
-        plt.ylabel("Acceleration [ERPM/loop]")
-
-        plt.legend(loc="lower right")
-        plt.show()
+    # if args.plot:
+    plt.figure(figsize=(8, 8), dpi=100)
+    plot_points(x, y, "blue", num_points)
+    plot_points(x, y_pred, "red", num_points)
+    # plt.show()
 
 
 if __name__ == "__main__":
@@ -140,17 +143,17 @@ if __name__ == "__main__":
         action="store_true",
         help="Plot the logged data along with the predicted line using matplotlib.",
     )
-    # parser.add_argument(
-    #     "-r",
-    #     "--ref_ratio",
-    #     # "--hertz",
-    #     default=9.0,
-    #     # metavar=("ACCEL", "DECEL"),
-    #     metavar=("ACCEL"),
-    #     type=float,
-    #     nargs=1,
-    #     help="Your current Accel. Ratio for comparison.",
-    # )
+    parser.add_argument(
+        "-r",
+        "--ref_ratio",
+        # "--hertz",
+        default=9.0,
+        # metavar=("ACCEL", "DECEL"),
+        metavar=("ACCEL"),
+        type=float,
+        nargs=1,
+        help="Your current Accel. Ratio for comparison.",
+    )
 
     args = parser.parse_args()
     main(args)
