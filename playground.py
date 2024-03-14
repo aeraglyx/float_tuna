@@ -57,8 +57,71 @@ def main(args):
     #     process_data(data, args)
 
     csv_file = csv_files[0]
+    print(csv_file)
+
     df = pd.read_csv(csv_file, sep=";")
-    df = df.dropna(axis=1, how="all")
+    df = df.dropna(axis=1, how="any")
+    # df = df.loc[:, (df != 0).any(axis=0)]
+    # print(df)
+    # df[
+    #     [
+    #         "ms_today",
+    #         "input_voltage",
+    #         "temp_mos_max",
+    #         # "temp_mos_1",
+    #         # "temp_mos_2",
+    #         # "temp_mos_3",
+    #         "temp_motor",
+    #         "current_motor",
+    #         "current_in",
+    #         "d_axis_current",
+    #         "q_axis_current",
+    #         "erpm",
+    #         "duty_cycle",
+    #         "amp_hours_used",
+    #         "amp_hours_charged",
+    #         "watt_hours_used",
+    #         "watt_hours_charged",
+    #         "tachometer",
+    #         "tachometer_abs",
+    #         "encoder_position",
+    #         # "fault_code",
+    #         # "vesc_id",
+    #         "d_axis_voltage",
+    #         "q_axis_voltage",
+    #         "ms_today_setup",
+    #         "amp_hours_setup",
+    #         "amp_hours_charged_setup",
+    #         "watt_hours_setup",
+    #         "watt_hours_charged_setup",
+    #         "battery_level",
+    #         "battery_wh_tot",
+    #         "current_in_setup",
+    #         "current_motor_setup",
+    #         "speed_meters_per_sec",
+    #         "tacho_meters",
+    #         "tacho_abs_meters",
+    #         # "num_vescs",
+    #         "ms_today_imu",
+    #         "roll",
+    #         "pitch",
+    #         "yaw",
+    #         "accX",
+    #         "accY",
+    #         "accZ",
+    #         "gyroX",
+    #         "gyroY",
+    #         "gyroZ",
+    #         "gnss_posTime",
+    #         "gnss_lat",
+    #         "gnss_lon",
+    #         "gnss_alt",
+    #         "gnss_gVel",
+    #         # "gnss_vVel",
+    #         "gnss_hAcc",
+    #         "gnss_vAcc",
+    #     ]
+    # ]
     # print(df)
 
     # get independent erpm
@@ -76,16 +139,11 @@ def main(args):
     erpm_grad = pd.Series(erpm_grad_np)
     df["erpm_grad"] = erpm_grad
 
-    # get strongly correlating values
-    corr = df.corr()["erpm_grad"]
-    corr = corr.dropna()
-    corr = corr.sort_values(key=abs, ascending=False)
-    corr = corr.iloc[1:]  # ignore correlation with itself
-    corr = corr.nlargest(8)
+    corr = utils.get_strong_corr(df, "erpm_grad", 8)
     # print(corr)
 
     # filter data
-    df = df[df["erpm_abs"] > 500]
+    df = df[df["erpm"] > 500]
     df = df.reset_index()
     # df = df[df["duty_cycle_abs"] > 0.01]
 
@@ -96,7 +154,9 @@ def main(args):
     x = df["current_motor"]
     y = df["erpm_grad"]
 
-    model = LinearRegression()
+    model = LinearRegression(
+        fit_intercept=False,
+    )
     model.fit(X, y)
     y_pred = pd.Series(model.predict(X))
     multivar_intercept, multivar_slope = utils.inverse_lin_func(
@@ -108,7 +168,7 @@ def main(args):
     print(multivar_slope)
     print(multivar_intercept)
     print(
-        f"(current_motor - ({abs(model.intercept_ / model.coef_[0]):.2f} + {abs(model.coef_[1] / model.coef_[0]):.4f} * erpm_abs)) / {1 / model.coef_[0]:.2f}"
+        f"(current_motor + ({model.intercept_ / model.coef_[0]:.2f} + {model.coef_[1] / model.coef_[0]:.5f} * erpm_abs)) / {1 / model.coef_[0]:.2f}"
     )
     print(
         f"{model.intercept_:.2f} + {model.coef_[0]:.3f} * current_motor + {model.coef_[1]:.5f} * erpm_abs"

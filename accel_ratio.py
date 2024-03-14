@@ -60,6 +60,8 @@ def main(args):
     df = df.dropna(axis=1, how="all")
     # print(df)
 
+    df = df[["ms_today", "current_motor", "erpm", "duty_cycle"]].copy()
+
     # get independent erpm
     erpm_abs = df["erpm"].abs()
     df["erpm_abs"] = erpm_abs
@@ -81,7 +83,8 @@ def main(args):
     # filter data
     df = df[df["erpm_abs"] > 500]
     # df = df[df["duty_cycle_abs"] > 0.01]
-    df = df.reset_index()
+    df = df.reset_index(drop=True)
+    # print(df)
 
     # assign vars to axis
     # X = df[["current_motor", "erpm_abs"]]
@@ -110,18 +113,21 @@ def main(args):
     print(f"{'Correlation:':<{spacing}}{r_value:.2f}")
     print("")
 
-    if args.plot:
-        plt.figure(figsize=(8, 8), dpi=100)
-        plot_points(x, y, df["erpm_abs"], num_points)
-        # if args.ref_ratio:
-        #     ratio_ref, offset_ref = utils.inverse_lin_func(8, args.ref_ratio)
-        #     plot_line(ratio_ref, offset_ref, (0.4, 0.7, 0.9), "Reference")
-        plot_line(slope, intercept, "purple", "Predicted")
-        plt.xlabel("Motor Current [A]")
-        plt.ylabel("Acceleration [ERPM/loop]")
+    # if args.plot:
+    plt.figure(figsize=(8, 6), dpi=100)
+    plot_points(x, y, df["erpm_abs"], num_points)
+    # if args.ref_ratio:
+    #     ratio_ref, offset_ref = utils.inverse_lin_func(8, args.ref_ratio)
+    #     plot_line(ratio_ref, offset_ref, (0.4, 0.7, 0.9), "Reference")
+    plot_line(slope, intercept, "purple", "Predicted")
+    plt.xlabel("Motor Current [A]")
+    plt.ylabel("Acceleration [ERPM/loop]")
 
-        plt.legend(loc="lower right")
-        plt.show()
+    plt.legend(loc="lower right")
+    cbar = plt.colorbar()
+    cbar.solids.set(alpha=1)
+    cbar.ax.set_ylabel("Speed [ERPM]")
+    plt.show()
 
 
 if __name__ == "__main__":
