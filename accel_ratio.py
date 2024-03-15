@@ -58,6 +58,7 @@ def main(args):
     csv_file = csv_files[0]
     df = pd.read_csv(csv_file, sep=";")
     df = df.dropna(axis=1, how="all")
+    # print(df["ms_today"].diff().describe())
     # print(df)
 
     df = df[["ms_today", "current_motor", "erpm", "duty_cycle"]].copy()

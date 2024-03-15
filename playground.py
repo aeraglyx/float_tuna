@@ -1,4 +1,5 @@
 import argparse
+import math
 import os
 from math import exp
 from statistics import mean, stdev
@@ -16,7 +17,7 @@ import utils
 
 def plot_points(x, y, color, num_points):
 
-    alpha = exp(-0.00015 * num_points)
+    alpha = exp(-0.015 * math.sqrt(num_points))
     plt.scatter(
         x,
         y,
@@ -48,21 +49,42 @@ def plot_line(slope, intercept, color, label):
     )
 
 
+def get_data(csv_files) -> pd.DataFrame:
+    dfs = []
+    for csv_file in csv_files:
+
+        df = pd.read_csv(csv_file, sep=";")
+        # df = df.dropna(axis=1, how="any")
+        df = df[["ms_today", "current_motor", "erpm", "duty_cycle"]].copy()
+
+        # get independent erpm
+        erpm_abs = df["erpm"].abs()
+        df["erpm_abs"] = erpm_abs
+
+        # get independent duty
+        duty_cycle_abs = df["duty_cycle"].abs()
+        df["duty_cycle_abs"] = duty_cycle_abs
+
+        # get erpm change
+        erpm_grad = np.gradient(df["erpm_abs"], df["ms_today"])
+        erpm_grad *= 1000 / args.loop_hertz  # normalize to erpm per loop
+        df["erpm_grad"] = pd.Series(erpm_grad)
+        # csv_file = csv_files[1]
+        dfs.append(df)
+    df = pd.concat(dfs, ignore_index=True)
+    return df
+
+
 def main(args):
 
     csv_files = utils.get_csv_files()
+    df = get_data(csv_files)
+    df = df.sample(20000)
 
-    # for csv_file in csv_files:
-    #     data = utils.get_data(csv_file)
-    #     process_data(data, args)
-
-    csv_file = csv_files[0]
-    print(csv_file)
-
-    df = pd.read_csv(csv_file, sep=";")
-    df = df.dropna(axis=1, how="any")
-    # df = df.loc[:, (df != 0).any(axis=0)]
     # print(df)
+    # print(csv_file)
+
+    # df = df.loc[:, (df != 0).any(axis=0)]
     # df[
     #     [
     #         "ms_today",
@@ -122,28 +144,12 @@ def main(args):
     #         "gnss_vAcc",
     #     ]
     # ]
-    # print(df)
 
-    # get independent erpm
-    erpm_abs = df["erpm"].abs()
-    df["erpm_abs"] = erpm_abs
-
-    # get independent duty
-    duty_cycle_abs = df["duty_cycle"].abs()
-    df["duty_cycle_abs"] = duty_cycle_abs
-
-    # get erpm change
-    ms_today = df["ms_today"]
-    erpm_grad_np = np.gradient(df["erpm_abs"], ms_today)
-    erpm_grad_np *= 1000 / args.loop_hertz  # normalize to erpm per loop
-    erpm_grad = pd.Series(erpm_grad_np)
-    df["erpm_grad"] = erpm_grad
-
-    corr = utils.get_strong_corr(df, "erpm_grad", 8)
+    # corr = utils.get_strong_corr(df, "erpm_grad", 8)
     # print(corr)
 
     # filter data
-    df = df[df["erpm"] > 500]
+    df = df[df["erpm"] > 250]
     df = df.reset_index()
     # df = df[df["duty_cycle_abs"] > 0.01]
 
@@ -151,6 +157,7 @@ def main(args):
 
     # assign vars to axis
     X = df[["current_motor", "erpm_abs"]]
+    # X = df[["current_motor"]]
     x = df["current_motor"]
     y = df["erpm_grad"]
 
@@ -171,7 +178,7 @@ def main(args):
         f"(current_motor + ({model.intercept_ / model.coef_[0]:.2f} + {model.coef_[1] / model.coef_[0]:.5f} * erpm_abs)) / {1 / model.coef_[0]:.2f}"
     )
     print(
-        f"{model.intercept_:.2f} + {model.coef_[0]:.3f} * current_motor + {model.coef_[1]:.5f} * erpm_abs"
+        f"{model.intercept_:.2f} + {model.coef_[0]:.3f} * current_motor + {model.coef_[1]:.6f} * erpm_abs"
     )
 
     # fit linear function to data
@@ -182,8 +189,8 @@ def main(args):
 
     # if args.plot:
     plt.figure(figsize=(8, 8), dpi=100)
-    plot_points(x, y, "blue", num_points)
-    plot_points(x, y_pred, "red", num_points)
+    # plot_points(x, y, "blue", num_points)
+    plot_points(df["erpm"], x, "black", num_points)
     # plt.show()
 
 
