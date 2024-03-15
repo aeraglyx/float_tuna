@@ -14,49 +14,16 @@ import utils
 # from scipy.optimize import curve_fit
 
 
-def plot_points(x, y, z, num_points):
-
-    alpha = math.exp(-0.012 * math.sqrt(num_points))
-    plt.scatter(
-        x,
-        y,
-        c=z,
-        cmap="magma",
-        alpha=alpha,
-        s=20,
-        linewidths=0,
-    )
-
-    mean_x = mean(x)
-    mean_y = mean(y)
-    stdev_x = 4 * stdev(x)
-    stdev_y = 4 * stdev(y)
-
-    plt.xlim([mean_x - stdev_x, mean_x + stdev_x])
-    plt.ylim([mean_y - stdev_y, mean_y + stdev_y])
-
-
-def plot_line(slope, intercept, color, label):
-
-    plt.axline(
-        xy1=(0, intercept),
-        slope=slope,
-        color=color,
-        linewidth=2.0,
-        label=label,
-    )
-
-
 def main(args):
 
     csv_files = utils.get_csv_files()
 
-    df = utils.get_data_from_all_files(csv_files)
+    df = utils.get_data_from_all_files(csv_files, args.loop_hertz)
 
     # corr = utils.get_strong_corr(df, "erpm_grad", 8)
 
     # filter data
-    df = df[df["erpm_abs"] > 500]
+    df = df[df["erpm"].abs() > 500]
     df = df.reset_index(drop=True)
 
     # assign vars to axis
@@ -82,7 +49,7 @@ def main(args):
 
     # if args.plot:
     plt.figure(figsize=(8, 6), dpi=100)
-    plot_points(x, y, df["erpm"], num_points)
+    utils.plot_points(x, y, df["erpm"])
     # if args.ref_ratio:
     #     ratio_ref, offset_ref = utils.inverse_lin_func(8, args.ref_ratio)
     #     plot_line(ratio_ref, offset_ref, (0.4, 0.7, 0.9), "Reference")

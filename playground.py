@@ -14,45 +14,11 @@ import utils
 # from scipy.optimize import curve_fit
 
 
-def plot_points(x, y, color, num_points):
-
-    alpha = math.exp(-0.015 * math.sqrt(num_points))
-    plt.scatter(
-        x,
-        y,
-        # c=z,
-        # cmap="magma",
-        color=color,
-        alpha=alpha,
-        s=20,
-        linewidths=0,
-    )
-
-    mean_x = mean(x)
-    mean_y = mean(y)
-    stdev_x = 4 * stdev(x)
-    stdev_y = 4 * stdev(y)
-
-    plt.xlim([mean_x - stdev_x, mean_x + stdev_x])
-    plt.ylim([mean_y - stdev_y, mean_y + stdev_y])
-
-
-def plot_line(slope, intercept, color, label):
-
-    plt.axline(
-        xy1=(0, intercept),
-        slope=slope,
-        color=color,
-        linewidth=2.0,
-        label=label,
-    )
-
-
 def main(args):
 
     csv_files = utils.get_csv_files()
 
-    df = utils.get_data_from_all_files(csv_files)
+    df = utils.get_data_from_all_files(csv_files, 800)
     print(f"All data points: {len(df)}")
     # df = df.sample(40000)
 
@@ -99,8 +65,8 @@ def main(args):
 
     # if args.plot:
     plt.figure(figsize=(8, 6), dpi=100)
-    # plot_points(x, y, "blue", num_points)
-    plot_points(df["erpm"], x, "black", num_points)
+    # utils.plot_points(x, y, color="blue")
+    utils.plot_points(df["erpm"], x, color="black", a=0.8)
 
     plt.xlabel("Speed [ERPM]")
     plt.ylabel("Motor Current [A]")
