@@ -4,7 +4,7 @@ CLI tool for tuning ATR's *Amps to Accel Ratio* in [Float Pkg](https://github.co
 
 ## Data Acquisition
 
-In VESC Tool, log a ride. Ideally on flat ground, but representable of your normal riding with a variety of accelerations and decelerations. If not, at least stop the recording at the same location/elevation as you started, so the ups and downs average out. Few seconds is NOT enough.
+In VESC Tool, log a ride. Ideally on flat ground, but representative of your normal riding with a variety of accelerations and decelerations. If not, at least stop the recording at the same location/elevation as you started, so the ups and downs average out. Few seconds is NOT enough.
 
 ## Installation
 
@@ -20,7 +20,7 @@ pip install -r requirements.txt
 
 ## Usage
 
-Place your recorded .csv log file into the project directory.
+Place your recorded .csv log file into `/logs`.
 
 In your terminal, navigate to the project folder and run:
 
@@ -36,7 +36,7 @@ The `-hz`/`--loop_hertz` argument should match your controller's frequency (Floa
 
 Use `-p`/`--plot` flag to plot recorded data along with the predicted curve.
 
-With `-r`/`--ref_ratio` you can specify your current Accel. Ratio for comparison.
+<!-- With `-r`/`--ref_ratio` you can specify your current Accel. Ratio for comparison. -->
 
 TODO image
 

@@ -1,17 +1,11 @@
 import argparse
-import math
-import os
-from statistics import mean, stdev
 
 import matplotlib.pyplot as plt
-import numpy as np
 import pandas as pd
 from scipy import stats
 from sklearn.linear_model import LinearRegression
 
 import utils
-
-# from scipy.optimize import curve_fit
 
 
 def main(args):
@@ -60,8 +54,6 @@ def main(args):
     # fit linear function to data
     slope, intercept, r_value, p_value, std_err = stats.linregress(x, y)
     offset_display, ratio_display = utils.inverse_lin_func(intercept, slope)
-
-    num_points = len(x)
 
     # if args.plot:
     plt.figure(figsize=(8, 6), dpi=100)
