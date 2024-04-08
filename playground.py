@@ -13,6 +13,7 @@ def main(args):
     csv_files = utils.get_csv_files()
 
     df = utils.get_data_from_all_files(csv_files, 800)
+    # df = utils.get_data_from_file(csv_files[4], 800)
     print(f"All data points: {len(df)}")
     # df = df.sample(40000)
 
@@ -58,7 +59,8 @@ def main(args):
     # if args.plot:
     plt.figure(figsize=(8, 6), dpi=100)
     # utils.plot_points(x, y, color="blue")
-    utils.plot_points(df["erpm"], x, color="black", a=0.8)
+    utils.plot_points(df["erpm"], x, color="black", a=0.8, s=15)
+    utils.plot_line(-model.coef_[1] / model.coef_[0], 0, "purple", "Predicted")
 
     plt.xlabel("Speed [ERPM]")
     plt.ylabel("Motor Current [A]")
