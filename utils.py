@@ -81,6 +81,7 @@ def filter_data(df):
 def plot_points(
     x,
     y,
+    ax=plt,
     z=None,
     s=10,
     a=1.0,
@@ -90,7 +91,7 @@ def plot_points(
     vmax=None,
 ):
     alpha = math.exp(-0.01 * math.sqrt(len(x)) / a)
-    plt.scatter(
+    im = ax.scatter(
         x,
         y,
         s=s,
@@ -108,13 +109,15 @@ def plot_points(
     stdev_x = 4 * stdev(x)
     stdev_y = 4 * stdev(y)
 
-    plt.xlim([mean_x - stdev_x, mean_x + stdev_x])
-    plt.ylim([mean_y - stdev_y, mean_y + stdev_y])
+    ax.set_xlim([mean_x - stdev_x, mean_x + stdev_x])
+    ax.set_ylim([mean_y - stdev_y, mean_y + stdev_y])
+
+    return im
 
 
-def plot_line(slope, intercept, color=None, label=None):
+def plot_line(slope, intercept, ax=plt, color=None, label=None):
 
-    plt.axline(
+    ax.axline(
         xy1=(0, intercept),
         slope=slope,
         color=color,

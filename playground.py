@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from scipy import stats
-from sklearn.linear_model import LinearRegression
+from sklearn.linear_model import LinearRegression, LogisticRegression
 
 import utils
 
@@ -18,70 +18,114 @@ def main(args):
     # df = df.sample(50000)
     # df = utils.get_data_from_file("logs/log_03.csv")
     print(f"Data points considered: {len(df)}")
-
-    utils.get_strong_corr(df, "erpm_grad", 8)
+    # utils.get_strong_corr(df, "erpm_grad", 8)
 
     df = utils.filter_data(df)
 
     # assign vars to axis
     X = df[["q_axis_current", "erpm"]]
-    # X = df[["current_motor"]]
     x = df["q_axis_current"]
     y = df["erpm_grad"]
 
-    model = LinearRegression(
-        fit_intercept=False,
+    model_lin = LinearRegression(fit_intercept=False)
+    model_lin.fit(X, y)
+    y_pred = pd.Series(model_lin.predict(X))
+
+    model_log = LogisticRegression(fit_intercept=False)
+    model_log.fit(X, y > 0)
+
+    # print(y > 0)
+
+    print("")
+    print(f"Lin. Reg. Slope Current:   {1 / model_lin.coef_[0]:.2f}")
+    print(f"Lin. Reg. Slope ERPM:     {model_lin.coef_[1]:.5f}")
+    print(f"Lin. Reg. Slope Combined: {model_lin.coef_[1] / model_lin.coef_[0]:.5f}")
+    print("")
+    print(f"Log. Reg. Slope Current:   {1 / model_log.coef_[0][0]:.2f}")
+    print(f"Log. Reg. Slope ERPM:     {model_log.coef_[0][1]:.5f}")
+    print(
+        f"Log. Reg. Slope Combined: {model_log.coef_[0][1] / model_log.coef_[0][0]:.5f}"
     )
-    model.fit(X, y)
-    y_pred = pd.Series(model.predict(X))
-    multivar_intercept, multivar_slope = utils.inverse_lin_func(
-        model.intercept_, model.coef_[0]
-    )
+    print("")
+
+    # multivar_intercept, multivar_slope = utils.inverse_lin_func(
+    #     model_lin.intercept_, model_lin.coef_[0]
+    # )
     print(f"y vs y_pred corr: {y_pred.corr(y)}")
-    print(model.intercept_)
-    print(model.coef_)
-    print(multivar_slope)
-    print(multivar_intercept)
+    print(model_lin.intercept_)
+    print(model_lin.coef_)
+    # print(multivar_slope)
+    # print(multivar_intercept)
     print(
-        f"(current_motor + ({model.intercept_ / model.coef_[0]:.2f} + {model.coef_[1] / model.coef_[0]:.5f} * erpm)) / {1 / model.coef_[0]:.2f}"
+        f"(current_motor + ({model_lin.intercept_ / model_lin.coef_[0]:.2f} + {model_lin.coef_[1] / model_lin.coef_[0]:.5f} * erpm)) / {1 / model_lin.coef_[0]:.2f}"
     )
     print(
-        f"{model.intercept_:.2f} + {model.coef_[0]:.3f} * current_motor + {model.coef_[1]:.6f} * erpm"
+        f"{model_lin.intercept_:.2f} + {model_lin.coef_[0]:.3f} * current_motor + {model_lin.coef_[1]:.6f} * erpm"
     )
 
     # fit linear function to data
     slope, intercept, r_value, p_value, std_err = stats.linregress(x, y)
     offset_display, ratio_display = utils.inverse_lin_func(intercept, slope)
 
-    # x_test = np.linspace(0, 10000, 100)
-    # y_test = 4 + 0.001 * x_test
-
     # if args.plot:
-    plt.figure(figsize=(8, 6), dpi=100)
-    # utils.plot_points(x, y, color="blue")
-    # utils.plot_points(df["erpm"], x, color="black", a=0.8, s=15)
-    norm = 1
-    utils.plot_points(
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 6))
+    # fig.suptitle("Horizontally stacked subplots")
+
+    im1 = utils.plot_points(
+        x - 0.00025 * 5.66 * df["erpm"],
+        # x,
+        y,
+        z=df["erpm"],
+        ax=ax1,
+        cmap="magma",
+        s=15,
+        vmin=0,
+        vmax=10000,
+    )
+    utils.plot_line(
+        # model_log.coef_[0][0],
+        1 / 8,
+        0,
+        ax1,
+        "purple",
+        "Predicted",
+    )
+
+    ax1.set_xlabel("Motor Current [A]")
+    ax1.set_ylabel("Acceleration [ERPM/loop]")
+
+    cbar = fig.colorbar(im1)
+    cbar.solids.set(alpha=1)
+    cbar.ax.set_ylabel("Speed [ERPM]")
+
+    norm = 2
+    im2 = utils.plot_points(
         df["erpm"],
         x,
-        df["erpm_grad"],
-        a=1.0,
+        ax=ax2,
+        z=df["erpm_grad"],
         s=15,
+        a=1.2,
+        cmap="coolwarm",
         vmin=-norm,
         vmax=norm,
-        cmap="bwr",
     )
-    utils.plot_line(-model.coef_[1] / model.coef_[0], 0, "purple", "Predicted")
-    # utils.plot_line(0.0008, 3.5, "purple", "Predicted")
-    # utils.plot_line(0.0013, 0.0, "purple", "Predicted")
-    # plt.plot(x_test, y_test)
+    utils.plot_line(
+        -model_log.coef_[0][1] / model_log.coef_[0][0],
+        0,
+        ax2,
+        "purple",
+        f"{model_log.coef_[0][1] / model_log.coef_[0][0]:.5f}",
+    )
+    ax2.legend(loc="lower right")
 
-    cbar = plt.colorbar()
+    ax2.set_xlabel("Speed [ERPM]")
+    ax2.set_ylabel("Motor Current [A]")
+
+    cbar = fig.colorbar(im2)
     cbar.solids.set(alpha=1)
     cbar.ax.set_ylabel("Acceleration [ERPM/loop]")
 
-    plt.xlabel("Speed [ERPM]")
-    plt.ylabel(f"{x.name.replace('_', ' ').title()} [A]")
     plt.show()
 
 
