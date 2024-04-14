@@ -15,15 +15,13 @@ def main(args):
     csv_files = utils.get_csv_files()
 
     df = utils.get_data_from_all_files(csv_files, args.loop_hertz)
-
+    df = utils.filter_data(df)
+    df = df.sample(50000)
     # corr = utils.get_strong_corr(df, "erpm_grad", 8)
 
-    # filter data
-    df = df[df["erpm"].abs() > 500]
-    df = df.reset_index(drop=True)
-
     # assign vars to axis
-    x = df["current_motor"]
+    # x = df["current_motor"]
+    x = df["q_axis_current"]
     y = df["erpm_grad"]
 
     # fit linear function to data
@@ -45,7 +43,7 @@ def main(args):
 
     # if args.plot:
     plt.figure(figsize=(8, 6), dpi=100)
-    utils.plot_points(x, y, df["erpm"])
+    utils.plot_points(x, y, df["erpm"].abs().clip(upper=10000), s=15)
     # if args.ref_ratio:
     #     ratio_ref, offset_ref = utils.inverse_lin_func(8, args.ref_ratio)
     #     plot_line(ratio_ref, offset_ref, (0.4, 0.7, 0.9), "Reference")

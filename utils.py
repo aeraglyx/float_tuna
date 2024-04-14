@@ -37,7 +37,8 @@ def get_data_from_file(csv_file, loop_hertz: int) -> pd.DataFrame:
 
     df = pd.read_csv(csv_file, sep=";")
     # df = df.dropna(axis=1, how="any")
-    df = df[["ms_today", "current_motor", "erpm", "duty_cycle"]].copy()
+    # df = df[["ms_today", "current_motor", "erpm", "duty_cycle"]].copy()
+    # df["erpm"] = df["erpm"].abs()
 
     # get independent erpm
     # erpm_abs = df["erpm"].abs()
@@ -69,17 +70,37 @@ def get_data_from_all_files(csv_files, loop_hertz: int) -> pd.DataFrame:
     return df
 
 
-def plot_points(x, y, z=None, s=10, a=1.0, color=None):
+def filter_data(df):
+    # df = df[df["erpm"].abs() > 200]
+    df = df[df["erpm"] > 200]
+    df = df[df["erpm"].abs() < 10000]
+    df = df[df["erpm_grad"].abs() < 5]
+    return df.reset_index()
+
+
+def plot_points(
+    x,
+    y,
+    z=None,
+    s=10,
+    a=1.0,
+    color=None,
+    cmap="magma",
+    vmin=None,
+    vmax=None,
+):
     alpha = math.exp(-0.01 * math.sqrt(len(x)) / a)
     plt.scatter(
         x,
         y,
         s=s,
         c=z,
-        cmap=(None if z is None else "magma"),
+        cmap=(None if z is None else cmap),
         color=color,
         alpha=alpha,
         linewidths=0,
+        vmin=vmin,
+        vmax=vmax,
     )
 
     mean_x = mean(x)

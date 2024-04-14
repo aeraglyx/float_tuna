@@ -1,6 +1,7 @@
 import argparse
 
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 from scipy import stats
 from sklearn.linear_model import LinearRegression
@@ -13,23 +14,19 @@ def main(args):
     csv_files = utils.get_csv_files()
 
     df = utils.get_data_from_all_files(csv_files, 800)
-    # df = utils.get_data_from_file(csv_files[4], 800)
-    print(f"All data points: {len(df)}")
-    # df = df.sample(40000)
-
+    # df = utils.get_data_from_file("logs/log_08_clean.csv", 800)
+    # df = df.sample(50000)
     # df = utils.get_data_from_file("logs/log_03.csv")
+    print(f"Data points considered: {len(df)}")
 
-    # corr = utils.get_strong_corr(df, "erpm_grad", 8)
+    utils.get_strong_corr(df, "erpm_grad", 8)
 
-    # filter data
-    df = df[df["erpm"].abs() > 250]
-    df = df.reset_index()
-    # df = df[df["duty_cycle_abs"] > 0.01]
+    df = utils.filter_data(df)
 
     # assign vars to axis
-    X = df[["current_motor", "erpm"]]
+    X = df[["q_axis_current", "erpm"]]
     # X = df[["current_motor"]]
-    x = df["current_motor"]
+    x = df["q_axis_current"]
     y = df["erpm_grad"]
 
     model = LinearRegression(
@@ -56,14 +53,35 @@ def main(args):
     slope, intercept, r_value, p_value, std_err = stats.linregress(x, y)
     offset_display, ratio_display = utils.inverse_lin_func(intercept, slope)
 
+    # x_test = np.linspace(0, 10000, 100)
+    # y_test = 4 + 0.001 * x_test
+
     # if args.plot:
     plt.figure(figsize=(8, 6), dpi=100)
     # utils.plot_points(x, y, color="blue")
-    utils.plot_points(df["erpm"], x, color="black", a=0.8, s=15)
+    # utils.plot_points(df["erpm"], x, color="black", a=0.8, s=15)
+    norm = 1
+    utils.plot_points(
+        df["erpm"],
+        x,
+        df["erpm_grad"],
+        a=1.0,
+        s=15,
+        vmin=-norm,
+        vmax=norm,
+        cmap="bwr",
+    )
     utils.plot_line(-model.coef_[1] / model.coef_[0], 0, "purple", "Predicted")
+    # utils.plot_line(0.0008, 3.5, "purple", "Predicted")
+    # utils.plot_line(0.0013, 0.0, "purple", "Predicted")
+    # plt.plot(x_test, y_test)
+
+    cbar = plt.colorbar()
+    cbar.solids.set(alpha=1)
+    cbar.ax.set_ylabel("Acceleration [ERPM/loop]")
 
     plt.xlabel("Speed [ERPM]")
-    plt.ylabel("Motor Current [A]")
+    plt.ylabel(f"{x.name.replace('_', ' ').title()} [A]")
     plt.show()
 
 
