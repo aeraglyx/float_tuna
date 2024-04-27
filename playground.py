@@ -17,6 +17,7 @@ def main(args):
     # df = utils.get_data_from_file("logs/log_08_clean.csv", 800)
     # df = df.sample(50000)
     # df = utils.get_data_from_file("logs/log_03.csv")
+    print("")
     print(f"Data points considered: {len(df)}")
     # utils.get_strong_corr(df, "erpm_grad", 8)
 
@@ -34,7 +35,8 @@ def main(args):
     model_log = LogisticRegression(fit_intercept=False)
     model_log.fit(X, y > 0)
 
-    # print(y > 0)
+    bias = 0.95
+    amp_offset_per_erpm = model_log.coef_[0][1] / model_log.coef_[0][0]
 
     print("")
     print(f"Lin. Reg. Slope Current:   {1 / model_lin.coef_[0]:.2f}")
@@ -47,21 +49,10 @@ def main(args):
         f"Log. Reg. Slope Combined: {model_log.coef_[0][1] / model_log.coef_[0][0]:.5f}"
     )
     print("")
-
-    # multivar_intercept, multivar_slope = utils.inverse_lin_func(
-    #     model_lin.intercept_, model_lin.coef_[0]
-    # )
-    print(f"y vs y_pred corr: {y_pred.corr(y)}")
-    print(model_lin.intercept_)
-    print(model_lin.coef_)
-    # print(multivar_slope)
-    # print(multivar_intercept)
-    print(
-        f"(current_motor + ({model_lin.intercept_ / model_lin.coef_[0]:.2f} + {model_lin.coef_[1] / model_lin.coef_[0]:.5f} * erpm)) / {1 / model_lin.coef_[0]:.2f}"
-    )
-    print(
-        f"{model_lin.intercept_:.2f} + {model_lin.coef_[0]:.3f} * current_motor + {model_lin.coef_[1]:.6f} * erpm"
-    )
+    print(f"Amp Offset per ERPM: {-amp_offset_per_erpm:.5f}")
+    print("")
+    print(f"y vs y_pred corr: {y_pred.corr(y):.2f}")
+    print("")
 
     # fit linear function to data
     slope, intercept, r_value, p_value, std_err = stats.linregress(x, y)
@@ -126,7 +117,7 @@ def main(args):
     cbar.solids.set(alpha=1)
     cbar.ax.set_ylabel("Acceleration [ERPM/loop]")
 
-    plt.show()
+    # plt.show()
 
 
 if __name__ == "__main__":
