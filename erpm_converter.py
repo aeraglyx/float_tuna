@@ -1,23 +1,27 @@
 import argparse
 import math
 
-erpm = 1000
-speed = 3.5
+erpm = 10000
+speed = 5.0
 use_miles = False
 
-diameter = 283
+diameter = 290
 motor_poles = 30
+
+radius_m = 0.5 * diameter * 0.001
+pole_pairs = motor_poles / 2
+mps_to_erpm_ratio = (math.tau * radius_m) / (pole_pairs * 60)
 
 
 def erpm_to_speed():
-    speed = float(erpm) * (math.pi * diameter / 1000) / (motor_poles * 60 / 2) * 3.6
+    speed = float(erpm) * mps_to_erpm_ratio * 3.6
     if use_miles:
         speed /= 1.60934
     return speed
 
 
 def speed_to_erpm():
-    erpm = float(speed) / (math.pi * diameter / 1000) * (motor_poles * 60 / 2) / 3.6
+    erpm = float(speed) / mps_to_erpm_ratio / 3.6
     if use_miles:
         erpm *= 1.60934
     return erpm
